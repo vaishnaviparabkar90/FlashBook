@@ -1,0 +1,25 @@
+# === Global ===
+node_modules/
+.env
+.env.*.local
+.DS_Store
+*.log
+logs
+*.tgz
+.cache/
+.vscode/
+.idea/
+
+# === Frontend (React) ===
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.*.local
+frontend/coverage/
+
+# === Backend (Node.js) ===
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.env.*.local
+backend/coverage/

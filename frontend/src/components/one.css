@@ -1,0 +1,136 @@
+.carousel-container {
+  margin-top: 2rem;
+  background: linear-gradient(135deg, #1e1e2f, #000000);
+  padding: 1rem;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.carousel-item {
+  transition: transform 1s ease-in-out;
+  height: 500px;
+  position: relative;
+}
+
+.carousel-image {
+  object-fit: cover;
+  height: 100%;
+  width: 100%;
+  filter: brightness(75%);
+  transition: transform 1.5s ease;
+  border-radius: 10px;
+}
+
+.carousel-item:hover .carousel-image {
+  transform: scale(1.05);
+}
+
+.carousel-caption {
+  bottom: 20px;
+  text-align: left;
+}
+
+.bg-blur {
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.text-shadow {
+  color: white;
+  text-shadow: 1px 1px 8px #000;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  padding: 0.5rem;
+}
+/* Button Styling */
+.book-now-btn {
+  background-color: #4CAF50; /* Green color */
+  border: 2px solid #4CAF50; /* Green border */
+  padding: 12px 30px; /* Bigger padding for better spacing */
+  font-size: 1.1rem; /* Slightly larger font size */
+  font-weight: bold; /* Bold text */
+  border-radius: 30px; /* Rounded corners for a modern look */
+  text-transform: uppercase; /* Uppercase letters for the button text */
+  transition: all 0.3s ease-in-out; /* Smooth transition for hover effect */
+}
+
+.book-now-btn:hover {
+  background-color: #45a049; /* Slightly darker green on hover */
+  border-color: #45a049; /* Darker border on hover */
+  cursor: pointer; /* Pointer cursor on hover */
+}
+
+.book-now-btn:focus {
+  outline: none; /* Remove outline on focus */
+}
+
+/* Optional: Add a shadow to the button */
+.book-now-btn {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.book-now-btn:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Larger shadow on hover */
+}
+.carousel-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.carousel-image {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+}
+
+.carousel-caption {
+  bottom: 20px;
+  left: 10%;
+  right: 10%;
+  text-align: center;
+}
+
+.text-shadow {
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.7);
+  color: white;
+}
+
+.bg-blur {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+}
+
+.book-now-btn {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+.book-now-btn:hover {
+  background-color: #1e40af;
+}
+
+/* Responsive Adjustments */
+@media screen and (max-width: 768px) {
+  .carousel-image {
+    height: 250px;
+  }
+
+  .carousel-caption {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  .book-now-btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}

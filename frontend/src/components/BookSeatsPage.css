@@ -1,0 +1,124 @@
+.seat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 1rem;
+  align-items: center;
+}
+
+.seat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.row-label {
+  margin-right: 10px;
+  font-weight: bold;
+  width: 30px;
+}
+
+.seat {
+  width: 40px;
+  height: 40px;
+  background-color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.seat:hover {
+  background-color: #cbd5e1;
+}
+
+.seat.selected {
+  background-color: #2563eb;
+  color: white;
+}
+
+.seat.booked {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  color: white;
+}
+
+.event-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100px;
+  width:00px;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.4);
+  z-index: 1;
+}
+
+.event-poster {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+}
+
+h4 {
+  margin-top: 80px;
+}
+/* Responsive hero image height */
+.event-hero {
+  min-height: 500px;
+}
+
+.event-background {
+  width: 100%;
+  height: 100%;
+}
+
+/* Seat Buttons */
+.seat-btn {
+  min-width: 40px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+/* Event card layout */
+.event-card {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .event-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .event-poster {
+    width: 100%;
+    height: auto;
+    max-width: 300px;
+  }
+
+  .event-card > div {
+    width: 100%;
+  }
+
+  .seat-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    min-width: 35px;
+  }
+
+  .event-hero {
+    min-height: 300px;
+  }
+
+  h4 {
+    font-size: 1.2rem;
+  }
+}

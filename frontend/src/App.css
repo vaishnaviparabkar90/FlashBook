@@ -1,0 +1,22 @@
+/* In your App.css or a separate CSS file */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+h2, h3 {
+  color: #1e6920; /* Hotstar red */
+}
+
+/* Other text and accents */
+body {
+  color: #333; /* Dark gray for normal text, easy on the eyes */
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #c2adad;
+}
