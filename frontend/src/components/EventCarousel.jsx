@@ -9,7 +9,7 @@ export default function EventCarousel() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('http://localhost:3000/events'); // Replace with your backend base URL
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/events`); // Replace with your backend base URL
         const data = await response.json();
         setEvents(data);
       } catch (error) {

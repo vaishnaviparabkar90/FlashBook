@@ -26,7 +26,7 @@ export default function BookSeatsPage() {
 
     const fetchEvent = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/events/${eventId}`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/events/${eventId}`);
         if (!response.ok) throw new Error('Event not found');
         const data = await response.json();
         console.log("Fetched event data:", data);
@@ -40,7 +40,7 @@ export default function BookSeatsPage() {
 
     const fetchSeats = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/events/${eventId}/seats`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/events/${eventId}/seats`);
         const data = await response.json();
         console.log("Fetched seats data:", data.seats);
         // Check if seats data is correctly structured
@@ -55,7 +55,7 @@ export default function BookSeatsPage() {
     fetchSeats();
 
     // WebSocket setup
-    const socket = new WebSocket('ws://localhost:3001');
+    const socket = new WebSocket(`import.meta.env.VITE_WS_URL`);
     socket.onopen = () => {
       console.log('✅ WebSocket connected');
       socket.send(
