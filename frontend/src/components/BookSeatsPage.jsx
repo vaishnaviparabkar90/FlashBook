@@ -55,7 +55,7 @@ export default function BookSeatsPage() {
     fetchSeats();
 
     // WebSocket setup
-    const socket = new WebSocket(`import.meta.env.VITE_WS_URL`);
+    const socket = new WebSocket(import.meta.env.VITE_WS_URL);
     socket.onopen = () => {
       console.log('✅ WebSocket connected');
       socket.send(
