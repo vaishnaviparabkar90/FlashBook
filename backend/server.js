@@ -9,7 +9,6 @@ const PORT = 3000;
 const WS_PORT = 3001;
 
 app.use(express.json());
-const cors = require('cors');
 app.use(cors({
   origin: 'https://flashboook.netlify.app', // your Netlify domain
   methods: ['GET', 'POST'],
