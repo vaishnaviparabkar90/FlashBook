@@ -1,10 +1,10 @@
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 
 const clients = new Map();
 const selectedSeatsByEvent = new Map();
 
-export function setupWebSocketServer(port) {
-  const wss = new WebSocketServer({ port });
+export function setupWebSocketServer(server) {
+  const wss = new WebSocketServer({ server });
 
   wss.on('connection', (ws) => {
     console.log('New client connected');
@@ -17,7 +17,7 @@ export function setupWebSocketServer(port) {
         const { type, eventId, seatId, userId, action } = data;
 
         if (type === 'join_event') {
-          console.log(` User ${userId} joined event ${eventId}`);
+          console.log(`User ${userId} joined event ${eventId}`);
           clients.set(ws, { userId, eventId });
         }
 
@@ -42,11 +42,10 @@ export function setupWebSocketServer(port) {
           wss.clients.forEach((client) => {
             const clientInfo = clients.get(client);
             if (
-                client !== ws &&
-                client.readyState === ws.OPEN &&
-                clientInfo?.eventId === eventId
-              )
-               {
+              client !== ws &&
+              client.readyState === WebSocket.OPEN &&
+              clientInfo?.eventId === eventId
+            ) {
               client.send(JSON.stringify({
                 type: 'seat_update',
                 seatId,
@@ -107,5 +106,5 @@ export function setupWebSocketServer(port) {
     });
   });
 
-  console.log(`✅ WebSocket server running on ws://localhost:${port}`);
+  console.log(`✅ WebSocket server attached to shared HTTP server`);
 }

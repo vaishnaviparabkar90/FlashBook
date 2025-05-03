@@ -1,20 +1,19 @@
 import express from 'express';
+import http from 'http'; // ✅ Required to create raw HTTP server
 import cors from 'cors';
 import pool from './db.js';
 import eventsRouter from './routes/events.js';
-import { setupWebSocketServer } from './websocket.js'; // <- External file
+import { setupWebSocketServer } from './websocket.js';
 
 const app = express();
-const PORT = 3000;
-const WS_PORT = 3001;
+const PORT = process.env.PORT || 3000; // ✅ Use dynamic port for Render
 
 app.use(express.json());
 app.use(cors({
-  origin: 'https://flashboook.netlify.app', // your Netlify domain
+  origin: 'https://flashboook.netlify.app', // your frontend domain
   methods: ['GET', 'POST'],
   credentials: true
 }));
-
 
 // API routes
 app.use('/events', eventsRouter);
@@ -28,10 +27,13 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-// Start HTTP server
-app.listen(PORT, () => {
-  console.log(`✅ Express server running on http://localhost:${PORT}`);
-});
+// ✅ Create one server for both HTTP and WebSocket
+const server = http.createServer(app);
 
-// Start WebSocket server
-setupWebSocketServer(WS_PORT);
+// ✅ Pass the shared server to your WebSocket setup
+setupWebSocketServer(server);
+
+// ✅ Listen once for both Express and WebSocket
+server.listen(PORT, () => {
+  console.log(`✅ Server (HTTP + WS) running on port ${PORT}`);
+});
