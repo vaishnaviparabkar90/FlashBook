@@ -9,8 +9,19 @@ const app = express();
 const PORT = process.env.PORT || 3000; // ✅ Use dynamic port for Render
 
 app.use(express.json());
+const allowedOrigins = [
+  'https://flashboook.netlify.app',   // production frontend
+  'http://localhost:5173'             // local frontend (Vite dev server)
+];
+
 app.use(cors({
-  origin: 'https://flashboook.netlify.app', // your frontend domain
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST'],
   credentials: true
 }));
