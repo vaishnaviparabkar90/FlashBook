@@ -1,17 +1,37 @@
 import express from 'express';
-import http from 'http'; // ✅ Required to create raw HTTP server
+import http from 'http';
 import cors from 'cors';
+import { createClient } from 'redis';  // Redis Client
 import pool from './db.js';
 import eventsRouter from './routes/events.js';
-import { setupWebSocketServer } from './websocket.js';
-
+import { setupWebSocketServer} from './websocket.js';
 const app = express();
-const PORT = process.env.PORT || 3000; // ✅ Use dynamic port for Render
+const PORT = process.env.PORT || 3000;
+// Set up Redis client
+const redisClient = createClient({
+  username: 'default',
+  password: 'fkwvq6VxveV2HdII5wsaQOZBa0voiqrN',
+  socket: {
+      host: 'redis-18122.c99.us-east-1-4.ec2.redns.redis-cloud.com',
+      port: 18122
+  }
+});
+
+
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
+
+async function connectRedis() {
+  await redisClient.connect();
+}
+
+connectRedis();
 
 app.use(express.json());
+
+// CORS Setup
 const allowedOrigins = [
-  'https://flashboook.netlify.app',   // production frontend
-  'http://localhost:5173'             // local frontend (Vite dev server)
+  'https://flashboook.netlify.app',  // production frontend
+  'http://localhost:5173'            // local frontend (Vite dev server)
 ];
 
 app.use(cors({
@@ -38,13 +58,13 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-// ✅ Create one server for both HTTP and WebSocket
+// Create HTTP server
 const server = http.createServer(app);
 
-// ✅ Pass the shared server to your WebSocket setup
+// Setup WebSocket server
 setupWebSocketServer(server);
 
-// ✅ Listen once for both Express and WebSocket
+// Start the server
 server.listen(PORT, () => {
   console.log(`✅ Server (HTTP + WS) running on port ${PORT}`);
 });

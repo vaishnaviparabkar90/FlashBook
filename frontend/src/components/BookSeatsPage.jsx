@@ -57,7 +57,7 @@ export default function BookSeatsPage() {
     // WebSocket setup
     const socket = new WebSocket(import.meta.env.VITE_WS_URL);
     socket.onopen = () => {
-      console.log('✅ WebSocket connected');
+      console.log('WebSocket connected');
       socket.send(
         JSON.stringify({
           type: 'join_event',
@@ -68,7 +68,7 @@ export default function BookSeatsPage() {
     };
 
     socket.onerror = (err) => {
-      console.error('❌ WebSocket error:', err);
+      console.error('WebSocket error:', err);
     };
 
     wsRef.current = socket;
@@ -88,40 +88,92 @@ export default function BookSeatsPage() {
   }, [eventId]);
 
   function handleSeatSelectionMessage(data) {
-    const { action, seatId, userId } = data;
-    const currentUserId = sessionStorage.getItem("userId");
-    console.log("Handling seat selection:", data);
+  const { action, seatId, userId } = data;
+  const currentUserId = sessionStorage.getItem("userId");
+  const seatElement = document.getElementById(seatId);
 
-    const seatElement = document.getElementById(seatId);
-    if (!seatElement) return;
-
-    if (action === "select") {
-      if (userId === currentUserId) {
-        seatElement.classList.remove('btn-outline-success');
-        seatElement.classList.add('btn-success');
-        console.log(`User ${userId} selected seat ${seatId}`);
-      } else {
-        seatElement.classList.remove('btn-outline-success');
-        seatElement.classList.add('btn-warning');
-        console.log(`Seat ${seatId} selected by another user`);
-      }
-    }
-    if (action === "deselect") {
-      seatElement.classList.remove('btn-success', 'btn-warning');
-      seatElement.classList.add('btn-outline-success');
-      console.log(`Seat ${seatId} deselected`);
-    }
+  if (!seatElement) {
+    console.warn(`❌ Seat element not found for ID: ${seatId}`);
+    return;
   }
 
+  console.log(`🔄 Handling seat update — Action: ${action}, Seat ID: ${seatId}, User ID: ${userId}`);
+
+  switch (action) {
+    case "select":
+      if (userId === currentUserId) {
+        console.log(`✅ You selected seat ${seatId}`);
+        seatElement.classList.remove('btn-outline-success', 'btn-warning');
+        seatElement.classList.add('btn-success');
+      } else {
+        console.log(`🟡 Another user (${userId}) selected seat ${seatId}`);
+        seatElement.classList.remove('btn-outline-success', 'btn-success');
+        seatElement.classList.add('btn-warning');
+      }
+      break;
+
+    case "deselect":
+    case "deselected":
+      console.log(`↩️ Seat ${seatId} was deselected/released`);
+      seatElement.classList.remove('btn-success', 'btn-warning');
+      seatElement.classList.add('btn-outline-success');
+      break;
+
+    case "booked":
+      if (userId === currentUserId) {
+        console.log(`🎉 You successfully booked seat ${seatId}`);
+        seatElement.classList.remove('btn-outline-success', 'btn-warning');
+        seatElement.classList.add('btn-success');
+        seatElement.disabled = true;
+      } else {
+        console.log(`🔒 Seat ${seatId} booked by another user (${userId})`);
+        seatElement.classList.remove('btn-outline-success', 'btn-success');
+        seatElement.classList.add('btn-warning');
+        seatElement.disabled = true;
+      }
+      break;
+
+    case "already_booked":
+    case "booking_failed":
+      if (userId === currentUserId) {
+        console.log(`❗ Cannot book seat ${seatId}: already booked or failed.`);
+        alert(`Seat ${seatId} is already booked or booking failed.`);
+        seatElement.classList.remove('btn-success', 'btn-warning');
+        seatElement.classList.add('btn-outline-success');
+      }
+      break;
+
+    case "already_under_booking":
+      if (userId !== currentUserId) {
+        console.log(`⏳ Seat ${seatId} is temporarily locked by another user (${userId})`);
+        seatElement.classList.remove('btn-outline-success', 'btn-success');
+        seatElement.classList.add('btn-warning');
+      }
+      break;
+
+    default:
+      console.warn(`❓ Unknown action "${action}" received for seat ${seatId}`);
+      break;
+  }
+}
+
+
+
   const toggleSeatSelection = (seatId) => {
+    const seatElement = document.getElementById(seatId);
+  
+    // Prevent selecting if another user is already selecting this seat (yellow)
+    if (seatElement && seatElement.classList.contains('btn-warning')) {
+      alert(`Seat ${seatId} is already being selected by another user. Please choose a different seat.`);
+      return;
+    }
+  
     const alreadySelected = selectedSeats.includes(seatId);
     const newSelectedSeats = alreadySelected
       ? selectedSeats.filter((id) => id !== seatId)
       : [...selectedSeats, seatId];
-    console.log("Toggling seat selection:", seatId, alreadySelected, newSelectedSeats);
     setSelectedSeats(newSelectedSeats);
-
-    // Send WebSocket message to notify others
+  
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(
         JSON.stringify({
@@ -132,15 +184,9 @@ export default function BookSeatsPage() {
           userId: userIdRef.current,
         })
       );
-      console.log("Sent WebSocket message:", {
-        type: 'seat_selection',
-        action: alreadySelected ? 'deselect' : 'select',
-        eventId,
-        seatId,
-        userId: userIdRef.current,
-      });
     }
   };
+  
 
   const scrollToSeats = () => {
     seatSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
