@@ -90,6 +90,60 @@ h4 {
   flex-wrap: wrap;
   gap: 1rem;
 }
+/* Book Now Button Style */
+.book-now-btn {
+  background-color: #4CAF50; /* Green background */
+  color: white; /* White text */
+  font-size: 18px; /* Font size */
+  padding: 15px 40px; /* Padding inside the button */
+  border: none; /* No border */
+  border-radius: 8px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: background-color 0.3s, transform 0.2s; /* Smooth transition for hover */
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  font-weight: bold; /* Bold text */
+}
+
+
+
+
+
+.book-now-btn:active {
+  background-color: #388e3c; /* Even darker green when clicked */
+  transform: scale(1); /* Reset scale when clicked */
+}
+
+.book-now-btn:focus {
+  outline: none; /* Remove the focus outline */
+}
+
+/* Alert Style */
+.alert {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alert-close-btn {
+  background: transparent;
+  border: none;
+  color: #721c24;
+  font-size: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0 10px;
+}
+
+.alert-close-btn:hover {
+  color: #a71d2a;
+}
+
 
 @media (max-width: 768px) {
   .event-card {

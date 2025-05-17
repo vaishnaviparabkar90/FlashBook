@@ -47,22 +47,8 @@
   padding: 0.5rem;
 }
 /* Button Styling */
-.book-now-btn {
-  background-color: #4CAF50; /* Green color */
-  border: 2px solid #4CAF50; /* Green border */
-  padding: 12px 30px; /* Bigger padding for better spacing */
-  font-size: 1.1rem; /* Slightly larger font size */
-  font-weight: bold; /* Bold text */
-  border-radius: 30px; /* Rounded corners for a modern look */
-  text-transform: uppercase; /* Uppercase letters for the button text */
-  transition: all 0.3s ease-in-out; /* Smooth transition for hover effect */
-}
 
-.book-now-btn:hover {
-  background-color: #45a049; /* Slightly darker green on hover */
-  border-color: #45a049; /* Darker border on hover */
-  cursor: pointer; /* Pointer cursor on hover */
-}
+
 
 .book-now-btn:focus {
   outline: none; /* Remove outline on focus */
@@ -107,7 +93,7 @@
 }
 
 .book-now-btn {
-  background-color: #2563eb;
+  background-color: #148d50;
   color: white;
   border: none;
   padding: 10px 20px;

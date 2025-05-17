@@ -1,0 +1,50 @@
+/* Book Now Button Style */
+.book-now-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 50px;
+  margin-bottom: 40px;
+  width: 100%;
+}
+
+
+.book-now-btn:hover {
+  background-color: #022425; /* Darker green on hover */
+  transform: scale(1.05); /* Slightly enlarge button on hover */
+}
+
+.book-now-btn:active {
+  background-color: #388e3c; /* Even darker green when clicked */
+  transform: scale(1); /* Reset scale when clicked */
+}
+
+.book-now-btn:focus {
+  outline: none; /* Remove the focus outline */
+}
+
+/* Alert Style */
+.alert {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alert-close-btn {
+  background: transparent;
+  border: none;
+  color: #721c24;
+  font-size: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0 10px;
+}
+
+.alert-close-btn:hover {
+  color: #a71d2a;
+}
