@@ -19,11 +19,12 @@ A simple full-stack ticket booking app built using **Node.js**, **React**, **Pos
 
 ## 📸 Screenshots
 
-(./screenshots/1.png)
-(./screenshots/2.png)
-(./screenshots/3.png)
-(./screenshots/4.png)
-(./screenshots/5.png)
+
+![Main Section ](./screenshots/1.png)
+![Seat Selection](./screenshots/2.png)
+![Form Filling ](./screenshots/3.png)
+![Razorpay](./screenshots/4.png)
+![booking Confirm ](./screenshots/5.png)
 ## 🧠 Tech Stack
 
 ### Backend
@@ -76,7 +77,7 @@ A simple full-stack ticket booking app built using **Node.js**, **React**, **Pos
 
 ---
 
-(./screenshots/db.png)
+![DB schema Design ](./screenshots/db.png)
 ## ⚙️ Setup & Run
 
 ### Backend
