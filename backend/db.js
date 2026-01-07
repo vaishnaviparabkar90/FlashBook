@@ -1,8 +1,7 @@
 import { Pool } from "pg";
 
-// ⚠️ Encode special characters in password (% → %25)
   const CONNECTION_STRING = "postgresql://postgres:Vaishnavi90@db.quoaloyyhbwihdizbaxx.supabase.co:5432/postgres";
-  //Vaishnavi90
+  
 const db = new Pool({
   connectionString: CONNECTION_STRING,
   ssl: {
