@@ -1,7 +1,8 @@
 import { Pool } from "pg";
 
-  const CONNECTION_STRING = "postgresql://postgres:Vaishnavi90@db.quoaloyyhbwihdizbaxx.supabase.co:5432/postgres";
   
+  const CONNECTION_STRING ="postgresql://postgres.quoaloyyhbwihdizbaxx:Vaishnavi90@aws-1-ap-south-1.pooler.supabase.com:6543/postgres";
+
 const db = new Pool({
   connectionString: CONNECTION_STRING,
   ssl: {
