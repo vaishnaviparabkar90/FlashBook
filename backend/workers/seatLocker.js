@@ -3,7 +3,7 @@ import { redisClient, redisConfig } from '../redis.js';
 
 console.log('🚀 Worker file started');
 
-const lockExpiry = 5 * 60; // 5 minutes
+const lockExpiry = 5 * 60 ; // 5 minutes
 console.log(`⏳ Lock expiry set to ${lockExpiry} seconds`);
 
 const seatLockWorker = new Worker(
@@ -33,7 +33,7 @@ setTimeout(async () => {
   const testKey = `seat_lock:${eventId}:${selectedSeats[0]}`;
   const val = await redisClient.get(testKey);
   console.log(`🧪 After 5 mins, lock value for first seat:`, val); // should be null
-}, 5 * 60 * 1000 + 5000); // 5 mins + buffer
+}, 15 * 60 * 1000 + 5000); // 5 mins + buffer
 
     console.log(`✅ Completed job ${job.id} for user ${userId}`);
   },

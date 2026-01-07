@@ -1,10 +1,34 @@
-import { Pool } from 'pg';
+import { Pool } from "pg";
 
+// ⚠️ Encode special characters in password (% → %25)
+  const CONNECTION_STRING = "postgresql://postgres:Vaishnavi90@db.quoaloyyhbwihdizbaxx.supabase.co:5432/postgres";
+  //Vaishnavi90
 const db = new Pool({
-  connectionString: 'postgresql://postgres.ejhmymrscznxybycozyn:%)aeGjA*4Kvb!7V@aws-0-ap-south-1.pooler.supabase.com:6543/postgres',
+  connectionString: CONNECTION_STRING,
   ssl: {
     rejectUnauthorized: false,
   },
 });
+
+// 🔹 When pool successfully connects
+db.on("connect", () => {
+  console.log("✅ PostgreSQL connected successfully");
+});
+
+// 🔹 If any error occurs
+db.on("error", (err) => {
+  console.error("❌ PostgreSQL connection error:", err);
+});
+
+// 🔹 Test the connection immediately
+(async () => {
+  try {
+    console.log("🔄 Testing PostgreSQL connection...");
+    const res = await db.query("SELECT NOW()");
+    console.log("✅ PostgreSQL test query success:", res.rows[0]);
+  } catch (err) {
+    console.error("❌ PostgreSQL test query failed:", err.message);
+  }
+})();
 
 export default db;

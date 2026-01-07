@@ -1,7 +1,7 @@
 // server/routes/userData.js
 import express from 'express';
-import { redisClient } from '../redis.js'; // Adjust the import based on your project structure
-import db from '../db.js'; 
+import { redisClient } from '../redis.js';
+import db from '../db.js';
 const router = express.Router();
 function getSeatLockKey(eventId, seatNumber) {
   return `seat_lock:${eventId}:${seatNumber}`;
@@ -15,7 +15,7 @@ router.post('/submit-user-data', async (req, res) => {
   if (!name || !email || !phone || !Array.isArray(seats) || !eventId || !userId) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
-  console.log('stage 1 User data:');
+  //console.log('stage 1 User data:');
 
   try {
     // 2. Check Redis locks (based on seatNumber)
@@ -24,9 +24,20 @@ router.post('/submit-user-data', async (req, res) => {
       console.log('Checking lock for seat:', seatNumber);
       const lockKey = getSeatLockKey(eventId, seatNumber);
       const lockOwner = await redisClient.get(lockKey);
-      if (lockOwner !== userId) {
-        return res.status(403).json({ success: false, message: `Seat ${seatNumber} is not locked by you.` });
+      if (!lockOwner) {
+        return res.status(400).json({
+          success: false,
+          message: `Seat ${seatNumber} is not locked yet. Please lock seats first.`,
+        });
       }
+
+      if (lockOwner !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: `Seat ${seatNumber} is locked by another user.`,
+        });
+      }
+
       console.log(`Lock for seat ${seatNumber} is valid.`);
     }
     const placeholders = seats.map((_, idx) => `$${idx + 1}`).join(', ');
@@ -49,10 +60,10 @@ router.post('/submit-user-data', async (req, res) => {
     if (result.rows.length !== seats.length) {
       return res.status(400).json({ success: false, message: 'Some seats not found in database' });
     }
-console.log('All seats found in database.');
+    console.log('All seats found in database.');
     const totalAmount = result.rows.reduce((sum, row) => sum + parseFloat(row.price), 0);
     console.log('Total amount:', totalAmount);
-return res.json({
+    return res.json({
       success: true,
       totalAmount,
       userId: userId,

@@ -115,13 +115,9 @@ useEffect(() => {
 
   return () => clearInterval(timer);
 }, [timeLeft]);
-
-
-
   const toggleSeatSelection = (seatId) => {
     const seatElement = document.getElementById(seatId);
     // Prevent selecting if another user is already selecting this seat (yellow)
-
     const alreadySelected = selectedSeats.includes(seatId);
     const newSelectedSeats = alreadySelected
       ? selectedSeats.filter((id) => id !== seatId)
@@ -159,7 +155,7 @@ useEffect(() => {
       if (data.success) {
         // Proceed to show form for user details
         console.log('Seats locked successfully');
-        setTimeLeft(300); // start 5-minute timer (300 seconds)
+        setTimeLeft(900); // start 15-minute timer (900 seconds)
   setShowModal(true); // show form
       } else {
         alert('Failed to lock seats');
