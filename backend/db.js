@@ -1,8 +1,7 @@
 import { Pool } from "pg";
-
-  
-  const CONNECTION_STRING ="postgresql://postgres.quoaloyyhbwihdizbaxx:Vaishnavi90@aws-1-ap-south-1.pooler.supabase.com:6543/postgres";
-
+import dotenv from 'dotenv';
+dotenv.config();
+const CONNECTION_STRING = process.env.DATABASE_URL;
 const db = new Pool({
   connectionString: CONNECTION_STRING,
   ssl: {
@@ -10,17 +9,17 @@ const db = new Pool({
   },
 });
 
-// 🔹 When pool successfully connects
+// When pool connects
 db.on("connect", () => {
   console.log("✅ PostgreSQL connected successfully");
 });
 
-// 🔹 If any error occurs
+// If error occurs
 db.on("error", (err) => {
   console.error("❌ PostgreSQL connection error:", err);
 });
 
-// 🔹 Test the connection immediately
+// Test connection
 (async () => {
   try {
     console.log("🔄 Testing PostgreSQL connection...");

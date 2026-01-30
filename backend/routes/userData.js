@@ -3,6 +3,7 @@ import express from 'express';
 import { redisClient } from '../redis.js';
 import db from '../db.js';
 const router = express.Router();
+
 function getSeatLockKey(eventId, seatNumber) {
   return `seat_lock:${eventId}:${seatNumber}`;
 }

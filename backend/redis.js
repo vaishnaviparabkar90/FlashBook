@@ -1,10 +1,11 @@
 import IORedis from 'ioredis';
-
+import dotenv from 'dotenv';
+dotenv.config();
 // The connection string from Upstash
 
-const REDIS_URL="rediss://default:AWRLAAIncDJiNmQ2MjYyZDgxNjg0N2I1YTA1MTQwZDk2YmZkMzhlNnAyMjU2NzU@primary-phoenix-25675.upstash.io:6379";
-
+const REDIS_URL = process.env.REDIS_URL;
 // Create a new Redis client instance
+console.log('🔄 Connecting to Redis...',REDIS_URL);
 export const redisClient = new IORedis(REDIS_URL, {
   maxRetriesPerRequest: null,
   enableReadyCheck: true,

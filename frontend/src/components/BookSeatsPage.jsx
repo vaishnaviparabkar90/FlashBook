@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Modal from "./Modal.jsx";
 import BookNowButton from './BookButtonNow';
 import UserDetailsModal from './UserDetailsModal';
+
 export default function BookSeatsPage() {
   const [showModal, setShowModal] = useState(false);
   const { eventId } = useParams();
@@ -12,16 +13,18 @@ export default function BookSeatsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [seats, setSeats] = useState([]);
-    const [seatNumbers, setSeatNumbers] = useState([]); // Store the actual seat numbers (A1, B2, etc.)
-const [timeLeft, setTimeLeft] = useState(null); // null until timer starts
-
+  const [seatsByRow, setSeatsByRow] = useState({});
+  const [seatLocks, setSeatLocks] = useState({});
+  const [seatNumbers, setSeatNumbers] = useState([]); // Store seat numbers (A1, B2, etc.)
+  const [timeLeft, setTimeLeft] = useState(null); // null until timer starts
   const [selectedSeats, setSelectedSeats] = useState([]);
-  const seatSectionRef = useRef(null);
-  const wsRef = useRef(null); // WebSocket ref for stable WebSocket instance
-  const userIdRef = useRef(null); // Store userId persistently
 
+  const seatSectionRef = useRef(null);
+  const wsRef = useRef(null); // stable WebSocket instance
+  const userIdRef = useRef(null); // store userId persistently
+
+  // Generate user ID and fetch event/seats
   useEffect(() => {
-    // Generate or retrieve unique user ID
     let userId = sessionStorage.getItem('userId');
     if (!userId) {
       userId = `user_${Math.random().toString(36).substr(2, 9)}`;
@@ -49,9 +52,9 @@ const [timeLeft, setTimeLeft] = useState(null); // null until timer starts
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/events/${eventId}/seats`);
         const data = await response.json();
         console.log("Fetched seats data:", data.seats);
-        // Check if seats data is correctly structured
 
-        setSeats(data.seats);
+        // Use directly if it's already grouped
+        setSeatsByRow(data.seats);
       } catch (error) {
         console.error('Error fetching seats:', error);
       }
@@ -62,6 +65,7 @@ const [timeLeft, setTimeLeft] = useState(null); // null until timer starts
 
     // WebSocket setup
     const socket = new WebSocket(import.meta.env.VITE_WS_URL);
+
     socket.onopen = () => {
       console.log('WebSocket connected');
       socket.send(
@@ -72,7 +76,6 @@ const [timeLeft, setTimeLeft] = useState(null); // null until timer starts
         })
       );
     };
-
     socket.onerror = (err) => {
       console.error('WebSocket error:', err);
     };
@@ -80,34 +83,62 @@ const [timeLeft, setTimeLeft] = useState(null); // null until timer starts
     wsRef.current = socket;
     socket.onmessage = function (event) {
       const data = JSON.parse(event.data);
-      console.log("Received WebSocket message:", data);  // Log the message for debugging
-    };
+      console.log("Received WebSocket message:", data);
 
+      if (data.type !== 'seat_update') return;
+
+      const { seatId, action, userId } = data;
+      setSeatLocks(prev => {
+        const next = { ...prev };
+
+        switch (action) {
+          case 'locked':
+            next[seatId] = userId === userIdRef.current ? 'mine' : 'locked';
+            break;
+          case 'unlocked':
+            // Make seat available again
+            delete next[seatId];
+            break;
+          case 'booked':
+            next[seatId] = 'booked';
+            break;
+          default:
+            break;
+        }
+        return next;
+      });
+    };
 
     return () => {
       socket.close();
     };
   }, [eventId]);
 
-useEffect(() => {
-  const updatedSeatNumbers = selectedSeats.map((id) => {
-    for (const row in seatsByRow) {
-      const seat = seatsByRow[row].find((s) => s.id === id);
-      if (seat) return seat.seat_number;
-    }
-    return id;
-  });
-  setSeatNumbers(updatedSeatNumbers);
-}, [selectedSeats, seats]);
-// Timer countdown effect
-useEffect(() => {
+  // Map selectedSeats to seat numbers
+  useEffect(() => {
+    if (!seatsByRow) return;
+
+    const updatedSeatNumbers = selectedSeats.map(id => {
+      for (const row in seatsByRow) {
+        const seat = seatsByRow[row].find(s => s.id === id);
+        if (seat) return seat.seat_number;
+      }
+      return id;
+    });
+
+    setSeatNumbers(updatedSeatNumbers);
+  }, [selectedSeats, seatsByRow]);
+
+  // Timer countdown
+  useEffect(() => {
   if (timeLeft === null) return;
 
   const timer = setInterval(() => {
-    setTimeLeft((prev) => {
-      if (prev === 1) {
+    setTimeLeft(prev => {
+      if (prev <= 1) {
         clearInterval(timer);
-        return null;
+        handleTimerEnd();
+        return 0;
       }
       return prev - 1;
     });
@@ -115,29 +146,38 @@ useEffect(() => {
 
   return () => clearInterval(timer);
 }, [timeLeft]);
+
+const handleTimerEnd = () => {
+  alert("⏰ Your seat lock has expired! Please refresh the page to select seats again.");
+  setSelectedSeats([]);       // clear selected seats
+  setSeatNumbers([]);         // clear seat numbers
+  setShowModal(false);        // close modal if open
+  setTimeLeft(null);          // reset timer
+  window.location.reload();
+};
+
+
+  // Seat selection toggle
   const toggleSeatSelection = (seatId) => {
-    const seatElement = document.getElementById(seatId);
-    // Prevent selecting if another user is already selecting this seat (yellow)
-    const alreadySelected = selectedSeats.includes(seatId);
-    const newSelectedSeats = alreadySelected
-      ? selectedSeats.filter((id) => id !== seatId)
-      : [...selectedSeats, seatId];
-    setSelectedSeats(newSelectedSeats);
+    if (seatLocks[seatId] === 'locked' || seatLocks[seatId] === 'booked') return;
 
+    setSelectedSeats(prev =>
+      prev.includes(seatId)
+        ? prev.filter(id => id !== seatId)
+        : [...prev, seatId]
+    );
   };
-
 
   const scrollToSeats = () => {
     seatSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  const seatsByRow = seats;
 
   if (loading) return <div className="text-center mt-5">Loading event details...</div>;
   if (error) return <div className="text-center mt-5 text-danger">Error: {error}</div>;
 
   const formattedDate = format(new Date(event.date), 'dd MMM, yyyy');
   const formattedTime = format(new Date(event.date), 'h:mm a');
+
   const handleBookNow = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lock-seats`, {
@@ -153,10 +193,9 @@ useEffect(() => {
       const data = await response.json();
 
       if (data.success) {
-        // Proceed to show form for user details
         console.log('Seats locked successfully');
-        setTimeLeft(900); // start 15-minute timer (900 seconds)
-  setShowModal(true); // show form
+        setTimeLeft(300); // 15-minute timer
+        setShowModal(true);
       } else {
         alert('Failed to lock seats');
       }
@@ -168,129 +207,114 @@ useEffect(() => {
 
   return (
     <div>
-      <div>
-        {/* Hero Section */}
-        <div className="event-hero position-relative text-white mb-5">
-          <div
-            className="event-background"
-            style={{
-              backgroundImage: `url(${event.image_url})`,
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              height: '450px',
-              width: '100%',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              filter: 'brightness(0.4)',
-              zIndex: 1,
-            }}
-          />
-
-          <div className="container position-relative z-2 py-5 d-flex flex-wrap align-items-start">
-            <div className="event-card bg-dark bg-opacity-75 p-4 rounded shadow-lg d-flex flex-row align-items-start">
-              <img
-                src={event.image_url}
-                alt={event.title}
-                className="event-poster rounded me-4"
-                style={{ width: '200px', height: '300px', objectFit: 'cover' }}
-              />
-              <div>
-                <h2 className="fw-bold mb-3">{event.title}</h2>
-                <div className="mb-3">
-                  <button className="btn btn-light btn-sm">Rate Now</button>
-                </div>
-                <div className="mb-3">
-                  <span className="badge bg-secondary me-2">2D</span>
-                  <span className="badge bg-secondary me-2">{event.language || 'Hindi'}</span>
-                </div>
-                <div className="text-light small mb-2">
-                  🕒 {formattedTime} • {event.certificate || 'A'} • {formattedDate}
-                </div>
-                <div className="text-light small mb-3">📍 {event.location}</div>
-                <button className="btn btn-success px-4" onClick={scrollToSeats}>Book Tickets Now!!</button>
+      {/* Hero Section */}
+      <div className="event-hero position-relative text-white mb-5">
+        <div
+          className="event-background"
+          style={{
+            backgroundImage: `url(${event.image_url})`,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            height: '450px',
+            width: '100%',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'brightness(0.4)',
+            zIndex: 1,
+          }}
+        />
+        <div className="container position-relative z-2 py-5 d-flex flex-wrap align-items-start">
+          <div className="event-card bg-dark bg-opacity-75 p-4 rounded shadow-lg d-flex flex-row align-items-start">
+            <img
+              src={event.image_url}
+              alt={event.title}
+              className="event-poster rounded me-4"
+              style={{ width: '200px', height: '300px', objectFit: 'cover' }}
+            />
+            <div>
+              <h2 className="fw-bold mb-3">{event.title}</h2>
+              <div className="mb-3">
+                <button className="btn btn-light btn-sm">Rate Now</button>
               </div>
+              <div className="mb-3">
+                <span className="badge bg-secondary me-2">2D</span>
+                <span className="badge bg-secondary me-2">{event.language || 'Hindi'}</span>
+              </div>
+              <div className="text-light small mb-2">
+                🕒 {formattedTime} • {event.certificate || 'A'} • {formattedDate}
+              </div>
+              <div className="text-light small mb-3">📍 {event.location}</div>
+              <button className="btn btn-success px-4" onClick={scrollToSeats}>Book Tickets Now!!</button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Seat Layout */}
-        <h4 ref={seatSectionRef} className="text-center mb-4 mt-5 font-weight-bold">
-          Select Your Seats
-        </h4>
+      {/* Seat Layout */}
+      <h4 ref={seatSectionRef} className="text-center mb-4 mt-5 font-weight-bold">Select Your Seats</h4>
+      <div className="d-flex flex-column align-items-center gap-3 mb-5">
+        {Object.keys(seatsByRow).sort().map(row => (
+          <div className="d-flex gap-3 mb-2" key={row}>
+            {seatsByRow[row].map(seat => {
+              const lockState = seatLocks[seat.id];
 
-        <div className="d-flex flex-column align-items-center gap-3 mb-5">
-          {Object.keys(seatsByRow).sort().map((row) => (
-            <div className="d-flex gap-3 mb-2" key={row}>
-              {seatsByRow[row].map((seat) => (
+              return (
                 <button
                   id={seat.id}
                   key={seat.id}
-                  disabled={seat.status === 'booked'}
-                  className={`btn btn-sm ${seat.status === 'booked'
-                    ? 'btn-secondary'
-                    : selectedSeats.includes(seat.id)
-                      ? 'btn-success'
-                      : 'btn-outline-success'
-                    } seat-btn`}
-                  onClick={() => {
-                    if (seat.status !== 'booked') {
-                      toggleSeatSelection(seat.id);
-                    }
-                  }}
+                  disabled={seat.status === 'booked' || lockState === 'booked'}
+                  className={`btn btn-sm seat-btn ${lockState === 'booked' ? 'btn-danger' :
+                      lockState === 'locked' ? 'btn-warning' :
+                        lockState === 'mine' ? 'btn-primary' :
+                          selectedSeats.includes(seat.id) ? 'btn-success' : 'btn-outline-success'
+                    }`}
+                  onClick={() => toggleSeatSelection(seat.id)}
                   aria-label={`Seat ${seat.seat_number} - ${seat.status === 'booked' ? 'Booked' : 'Available'}`}
                 >
                   {seat.seat_number}
                 </button>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        {/* Selected Seats Display */}
-        <div className="text-center mt-5">
-          <h5>Selected Seats:</h5>
-          <div className="d-flex flex-wrap justify-content-center gap-2">
-            {selectedSeats.length > 0
-              ? selectedSeats
-                .map((id) => {
-                  for (const row in seatsByRow) {
-                    const seat = seatsByRow[row].find((s) => s.id === id);
-                    //setSeatNumbers(seat.seat_number);...Chck is this workign or not 
-                    if (seat) return seat.seat_number;
-                  }
-                  return id;
-                })
-                .map((seat, index) => (
-                  <span key={index} className="badge bg-success p-2">
-                    {seat}
-                  </span>
-                ))
-              : <span className="badge bg-secondary p-2">None</span>}
+              );
+            })}
           </div>
-        </div>
-        {timeLeft !== null && (
-  <div style={{
-    position: 'fixed',
-    top: '20px',
-    right: '20px', // Change to 'left' if you want left corner
-    backgroundColor: '#fff3cd',
-    color: '#856404',
-    padding: '10px 20px',
-    borderRadius: '8px',
-    boxShadow: '0 0 10px rgba(0,0,0,0.15)',
-    zIndex: 9999
-  }}>
-    ⏳ Time left: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-  </div>
-)}
-
-        <div className="book-now-container">
-          <BookNowButton selectedSeats={selectedSeats} handleBookNow={handleBookNow} />
-        </div>
-
+        ))}
       </div>
-      {showModal && <UserDetailsModal seatsSelected={seatNumbers}  seatId={selectedSeats}eventId={eventId} userId={userIdRef.current} onClose={() => setShowModal(false)} />}
+
+      {/* Selected Seats Display */}
+      <div className="text-center mt-5">
+        <h5>Selected Seats:</h5>
+        <div className="d-flex flex-wrap justify-content-center gap-2">
+          {selectedSeats.length > 0
+            ? seatNumbers.map((seatNum, index) => (
+              <span key={index} className="badge bg-success p-2">{seatNum}</span>
+            ))
+            : <span className="badge bg-secondary p-2">None</span>
+          }
+        </div>
+      </div>
+
+      {/* Timer */}
+      {timeLeft !== null && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          backgroundColor: '#fff3cd',
+          color: '#856404',
+          padding: '10px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 0 10px rgba(0,0,0,0.15)',
+          zIndex: 9999
+        }}>
+          ⏳ Time left: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+        </div>
+      )}
+
+      <div className="book-now-container">
+        <BookNowButton selectedSeats={selectedSeats} handleBookNow={handleBookNow} />
+      </div>
+
+      {showModal && <UserDetailsModal seatsSelected={seatNumbers} seatId={selectedSeats} eventId={eventId} userId={userIdRef.current} onClose={() => setShowModal(false)} />}
     </div>
   );
 }

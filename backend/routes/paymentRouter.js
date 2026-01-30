@@ -1,12 +1,16 @@
 import express from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
 import Razorpay from 'razorpay';
 import { redisClient } from '../redis.js';
 import db from '../db.js'; // Assuming pg-pool instance
 const router = express.Router();
+import { broadcastSeatUpdate } from '../websocket.js';
+
 
 const razorpay = new Razorpay({
-  key_id: 'rzp_test_2kBWWxBdzBeiXX',
-  key_secret: 'Dy3xu2uamDfWbXMwkKJ6xFai',
+  key_id: process.env.RAZORPAY_KEY_ID ,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 function getSeatLockKey(eventId, seatId) {
@@ -74,11 +78,16 @@ router.post('/finalize-payment', async (req, res) => {
     // Validate Redis locks for all seats
     for (const seatId of seats) {
       const lockKey = getSeatLockKey(eventId, seatId);
-      const lockOwner = await redisClient.get(lockKey);
-      if (lockOwner !== userId) {
-        await client.query('ROLLBACK');
-        return res.status(403).json({ success: false, message: `Seat ${seatId} is not locked by you.` });
+      const lockValue = await redisClient.get(lockKey);
+      if (!lockValue) {
+        return res.status(403).json({ success: false, message: 'Seat lock expired' });
       }
+
+      const { userId: lockUser } = JSON.parse(lockValue);
+      if (lockUser !== userId) {
+        return res.status(403).json({ success: false, message: 'Seat not locked by you' });
+      }
+
     }
 
     // 1. Update seat status to 'booked'
@@ -106,6 +115,14 @@ router.post('/finalize-payment', async (req, res) => {
        VALUES ($1, $2, $3, $4)`,
       [bookingIds[0], razorpay_payment_id, razorpay_order_id, amount]
     );
+    for (const seatId of seats) {
+      broadcastSeatUpdate({
+        eventId,
+        seatId,
+        action: 'booked',
+        userId,
+      });
+    }
 
     // 4. Delete Redis locks
     const lockKeys = seats.map(seatId => getSeatLockKey(eventId, seatId));
@@ -114,6 +131,7 @@ router.post('/finalize-payment', async (req, res) => {
     await client.query('COMMIT');
 
     return res.json({ success: true, message: 'Payment verified and booking finalized' });
+
 
   } catch (error) {
     await client.query('ROLLBACK');

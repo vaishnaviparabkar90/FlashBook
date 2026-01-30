@@ -1,77 +1,68 @@
 import { WebSocketServer, WebSocket } from 'ws';
-export const clients = new Map();
-export const selectedSeatsByEvent = new Map();
-export let wss; // export the shared instance
+
+export const clients = new Map(); // ws -> { userId, eventId }
+export let wss;
+
 export function setupWebSocketServer(server) {
-  wss = new WebSocketServer({ server }); // ✅ overwrite exported `wss`
+  wss = new WebSocketServer({ server });
 
   wss.on('connection', (ws) => {
-    console.log('✅ New client connected');
+    console.log('✅ New WebSocket client connected');
 
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message);
-        const { type, eventId, seatId, userId, action } = data;
+        const { type, eventId, userId } = data;
 
+        /* ---------------- JOIN EVENT ---------------- */
         if (type === 'join_event') {
-          console.log(`👤 User ${userId} joined event ${eventId}`);
           clients.set(ws, { userId, eventId });
-
-          console.log('📋 Current connected clients:');
-          clients.forEach((value) => {
-            console.log(`🧑‍💻 User: ${value.userId}, Event: ${value.eventId}`);
-          });
+          console.log(`👤 User ${userId} joined event ${eventId}`);
         }
+
       } catch (err) {
-        console.error('❗ Invalid message received:', err);
+        console.error('❗ Invalid WebSocket message:', err);
       }
     });
 
     ws.on('close', () => {
-      const clientInfo = clients.get(ws);
-      if (!clientInfo) return;
-
-      const { userId, eventId } = clientInfo;
-      //console.log(`❎ Connection closed for User ${userId} in Event ${eventId}`);
-      clients.delete(ws);
-
-      const eventSeats = selectedSeatsByEvent.get(eventId);
-      if (eventSeats) {
-        const releasedSeats = [];
-        for (const [seatId, uid] of eventSeats.entries()) {
-          if (uid === userId) {
-            releasedSeats.push(seatId);
-            eventSeats.delete(seatId);
-            console.log(`↩️ Released seat ${seatId} from User ${userId}`);
-          }
-        }
-
-        // 🔁 Notify other clients in the same event
-        wss.clients.forEach((client) => {
-          const clientInfo = clients.get(client);
-          if (
-            client !== ws &&
-            client.readyState === WebSocket.OPEN &&
-            clientInfo?.eventId === eventId
-          ) {
-            releasedSeats.forEach((seatId) => {
-              client.send(JSON.stringify({
-                type: 'seat_update',
-                seatId,
-                userId,
-                eventId,
-                action: 'deselect',
-              }));
-              console.log(`📤 Sent seat ${seatId} release to User ${clientInfo.userId}`);
-            });
-          }
-        });
+      const info = clients.get(ws);
+      if (info) {
+        console.log(`❎ User ${info.userId} disconnected from event ${info.eventId}`);
       }
+      clients.delete(ws);
     });
   });
 
-  console.log(`🚀 WebSocket server attached to HTTP server`);
+  console.log('🚀 WebSocket server attached to HTTP server');
   return wss;
 }
 
+/* --------------------------------------------------
+   Helper function to broadcast seat updates
+   Call this FROM YOUR HTTP ROUTES
+-------------------------------------------------- */
+export function broadcastSeatUpdate({ eventId, seatId, action, userId }) {
+  if (!wss) return;
 
+  console.log(
+    `📢 Broadcasting seat update → Event:${eventId}, Seat:${seatId}, Action:${action}`
+  );
+
+  wss.clients.forEach((client) => {
+    const info = clients.get(client);
+
+    if (
+      client.readyState === WebSocket.OPEN &&
+      info?.eventId === eventId
+    ) {
+      client.send(JSON.stringify({
+        type: 'seat_update',
+        eventId,
+        seatId,
+        action,     // "locked" | "unlocked" | "booked"
+        userId,
+      }));
+    }
+  });
+}

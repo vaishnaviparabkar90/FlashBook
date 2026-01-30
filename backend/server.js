@@ -1,23 +1,29 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+
 import eventsRouter from './routes/events.js';
-import { setupWebSocketServer} from './websocket.js';
-const app = express();
-const PORT = process.env.PORT || 3000;
-import lockSeatsRouter from './routes/lockSeats.js'; // Your seat locking route
+import lockSeatsRouter from './routes/lockSeats.js';
 import paymentRouter from './routes/paymentRouter.js';
 import userDataRoute from './routes/userData.js';
+import { setupWebSocketServer } from './websocket.js';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
 
 // CORS Setup
 const allowedOrigins = [
-  'https://flashboook.netlify.app',  // production frontend
-  'http://localhost:5173'            // local frontend (Vite dev server)
+  'https://flashboook.netlify.app',
+  'http://localhost:5173'
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
+  origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -25,22 +31,23 @@ app.use(cors({
     }
   },
   methods: ['GET', 'POST'],
-  credentials: true
+  credentials: true,
 }));
 
-// API routes
+// Routes
 app.use('/events', eventsRouter);
 app.get('/api/ping', (req, res) => res.send('pong'));
 app.use('/api/lock-seats', lockSeatsRouter);
 app.use('/api', userDataRoute);
 app.use('/api2', paymentRouter);
-// Create HTTP server
+
+// HTTP server
 const server = http.createServer(app);
 
-// Setup WebSocket server
+// WebSocket
 setupWebSocketServer(server);
 
-// Start the server
+// Start
 server.listen(PORT, () => {
   console.log(`✅ Server (HTTP + WS) running on port ${PORT}`);
 });
