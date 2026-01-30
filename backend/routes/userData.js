@@ -22,9 +22,9 @@ router.post('/submit-user-data', async (req, res) => {
     // 2. Check Redis locks (based on seatNumber)
     console.log('Checking Redis locks for seats:', seats);
     for (const seatNumber of seats) {
-      console.log('Checking lock for seat:', seatNumber);
       const lockKey = getSeatLockKey(eventId, seatNumber);
       const lockOwner = await redisClient.get(lockKey);
+
       if (!lockOwner) {
         return res.status(400).json({
           success: false,
@@ -32,7 +32,15 @@ router.post('/submit-user-data', async (req, res) => {
         });
       }
 
-      if (lockOwner !== userId) {
+      let lockData;
+      try {
+        lockData = JSON.parse(lockOwner);
+      } catch (err) {
+        console.error('Error parsing Redis lock:', err);
+        return res.status(500).json({ success: false, message: 'Invalid lock data' });
+      }
+
+      if (lockData.userId !== userId) {
         return res.status(403).json({
           success: false,
           message: `Seat ${seatNumber} is locked by another user.`,
@@ -41,6 +49,7 @@ router.post('/submit-user-data', async (req, res) => {
 
       console.log(`Lock for seat ${seatNumber} is valid.`);
     }
+
     const placeholders = seats.map((_, idx) => `$${idx + 1}`).join(', ');
     const values = [...seats, eventId];
     const eventIdParamIndex = seats.length + 1;

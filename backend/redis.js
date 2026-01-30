@@ -7,6 +7,7 @@ const REDIS_URL = process.env.REDIS_URL;
 // Create a new Redis client instance
 console.log('🔄 Connecting to Redis...',REDIS_URL);
 export const redisClient = new IORedis(REDIS_URL, {
+  tls: {},
   maxRetriesPerRequest: null,
   enableReadyCheck: true,
 });
