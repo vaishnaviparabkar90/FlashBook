@@ -23,7 +23,8 @@ export default function UserDetailsModal({ onClose, seatsSelected, eventId, user
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/submit-user-data', {
+      
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/submit-user-data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
