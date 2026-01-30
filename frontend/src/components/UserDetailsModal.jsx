@@ -108,6 +108,7 @@ export default function UserDetailsModal({ onClose, seatsSelected, eventId, user
 
         if (verifyData.success) {
           alert('✅ Payment Successful and Booking Confirmed!');
+          window.location.reload();
           onClose();
         } else {
           alert('❌ Payment verification failed. Please contact support.');
