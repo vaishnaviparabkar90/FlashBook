@@ -72,7 +72,7 @@ export default function UserDetailsModal({ onClose, seatsSelected, eventId, user
     alert('Razorpay SDK failed to load. Please check your internet connection.');
     return;
   }
-    const orderRes = await fetch('/api2/create-order', {
+    const orderRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api2/create-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: totalAmount }),
@@ -88,7 +88,7 @@ export default function UserDetailsModal({ onClose, seatsSelected, eventId, user
       order_id: order.id,
       handler: async function (response) {
         // Send payment details to backend for verification and finalization
-        const verifyRes = await fetch('/api2/finalize-payment', {
+        const verifyRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api2/finalize-payment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
