@@ -7,9 +7,9 @@ import BookSeatsPage from './components/BookSeatsPage';
 
 function App() {
   return (
-    <div className="bg-light min-vh-100">
+    <div className="min-h-screen bg-gray-200">
       <Navbar />
-      <div className="container py-2">
+      <div className="max-w-7xl mx-auto py-4 px-4">
         <Routes>
           <Route path="/" element={<EventCarousel />} />
           <Route path="/book/:eventId" element={<BookSeatsPage />} />
@@ -19,5 +19,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;

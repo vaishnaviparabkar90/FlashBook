@@ -1,45 +1,45 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { format } from 'date-fns';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import Modal from "./Modal.jsx";
-import BookNowButton from './BookButtonNow';
-import UserDetailsModal from './UserDetailsModal';
+import React, { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { format } from "date-fns";
+import BookNowButton from "./BookButtonNow";
+import UserDetailsModal from "./UserDetailsModal";
 
 export default function BookSeatsPage() {
-  const [showModal, setShowModal] = useState(false);
   const { eventId } = useParams();
+
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [seats, setSeats] = useState([]);
+  const [error, setError] = useState("");
+
   const [seatsByRow, setSeatsByRow] = useState({});
-  const [seatLocks, setSeatLocks] = useState({});
-  const [seatNumbers, setSeatNumbers] = useState([]); // Store seat numbers (A1, B2, etc.)
-  const [timeLeft, setTimeLeft] = useState(null); // null until timer starts
+  const [seatLocks, setSeatLocks] = useState({}); // only reflects backend locks
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [seatNumbers, setSeatNumbers] = useState([]);
+
+  const [showModal, setShowModal] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [isLockPhase, setIsLockPhase] = useState(false); // 🔐 HARD LOCK PHASE
 
   const seatSectionRef = useRef(null);
-  const wsRef = useRef(null); // stable WebSocket instance
-  const userIdRef = useRef(null); // store userId persistently
+  const wsRef = useRef(null);
+  const userIdRef = useRef(null);
 
-  // Generate user ID and fetch event/seats
+  /* ------------------ USER + DATA FETCH ------------------ */
   useEffect(() => {
-    let userId = sessionStorage.getItem('userId');
+    let userId = sessionStorage.getItem("userId");
     if (!userId) {
-      userId = `user_${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem('userId', userId);
+      userId = `user_${Math.random().toString(36).slice(2, 9)}`;
+      sessionStorage.setItem("userId", userId);
     }
     userIdRef.current = userId;
-    console.log("Generated/Retrieved User ID:", userIdRef.current);
 
     const fetchEvent = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/events/${eventId}`);
-        if (!response.ok) throw new Error('Event not found');
-        const data = await response.json();
-        console.log("Fetched event data:", data);
-        setEvent(data);
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/events/${eventId}`
+        );
+        if (!res.ok) throw new Error("Event not found");
+        setEvent(await res.json());
       } catch (err) {
         setError(err.message);
       } finally {
@@ -48,273 +48,253 @@ export default function BookSeatsPage() {
     };
 
     const fetchSeats = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/events/${eventId}/seats`);
-        const data = await response.json();
-        console.log("Fetched seats data:", data.seats);
-
-        // Use directly if it's already grouped
-        setSeatsByRow(data.seats);
-      } catch (error) {
-        console.error('Error fetching seats:', error);
-      }
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/events/${eventId}/seats`
+      );
+      const data = await res.json();
+      setSeatsByRow(data.seats);
     };
 
     fetchEvent();
     fetchSeats();
 
-    // WebSocket setup
     const socket = new WebSocket(import.meta.env.VITE_WS_URL);
+    wsRef.current = socket;
 
     socket.onopen = () => {
-      console.log('WebSocket connected');
       socket.send(
         JSON.stringify({
-          type: 'join_event',
+          type: "join_event",
           eventId,
           userId: userIdRef.current,
         })
       );
     };
-    socket.onerror = (err) => {
-      console.error('WebSocket error:', err);
-    };
 
-    wsRef.current = socket;
-    socket.onmessage = function (event) {
-      const data = JSON.parse(event.data);
-      console.log("Received WebSocket message:", data);
+    socket.onmessage = (msg) => {
+      const data = JSON.parse(msg.data);
+      if (data.type !== "seat_update") return;
 
-      if (data.type !== 'seat_update') return;
-
-      const { seatId, action, userId } = data;
-      setSeatLocks(prev => {
+      setSeatLocks((prev) => {
         const next = { ...prev };
-
-        switch (action) {
-          case 'locked':
-            next[seatId] = userId === userIdRef.current ? 'mine' : 'locked';
-            break;
-          case 'unlocked':
-            // Make seat available again
-            delete next[seatId];
-            break;
-          case 'booked':
-            next[seatId] = 'booked';
-            break;
-          default:
-            break;
+        if (data.action === "locked") {
+          next[data.seatId] =
+            data.userId === userIdRef.current ? "mine" : "locked";
+        } else if (data.action === "unlocked") {
+          delete next[data.seatId];
+        } else if (data.action === "booked") {
+          next[data.seatId] = "booked";
         }
         return next;
       });
     };
 
-    return () => {
-      socket.close();
-    };
+    return () => socket.close();
   }, [eventId]);
 
-  // Map selectedSeats to seat numbers
+  /* ------------------ SEAT NUMBERS ------------------ */
   useEffect(() => {
-    if (!seatsByRow) return;
-
-    const updatedSeatNumbers = selectedSeats.map(id => {
+    const nums = selectedSeats.map((id) => {
       for (const row in seatsByRow) {
-        const seat = seatsByRow[row].find(s => s.id === id);
+        const seat = seatsByRow[row].find((s) => s.id === id);
         if (seat) return seat.seat_number;
       }
       return id;
     });
-
-    setSeatNumbers(updatedSeatNumbers);
+    setSeatNumbers(nums);
   }, [selectedSeats, seatsByRow]);
 
-  // Timer countdown
+  /* ------------------ TIMER (ONLY AFTER BOOK NOW) ------------------ */
   useEffect(() => {
-  if (timeLeft === null) return;
+    if (!isLockPhase || timeLeft === null) return;
 
-  const timer = setInterval(() => {
-    setTimeLeft(prev => {
-      if (prev <= 1) {
-        clearInterval(timer);
-        handleTimerEnd();
-        return 0;
-      }
-      return prev - 1;
-    });
-  }, 1000);
+    const t = setInterval(() => {
+      setTimeLeft((p) => {
+        if (p <= 1) {
+          clearInterval(t);
+          handleTimerEnd();
+          return 0;
+        }
+        return p - 1;
+      });
+    }, 1000);
 
-  return () => clearInterval(timer);
-}, [timeLeft]);
+    return () => clearInterval(t);
+  }, [isLockPhase, timeLeft]);
 
-const handleTimerEnd = () => {
-  alert("⏰ Your seat lock has expired! Please refresh the page to select seats again.");
-  setSelectedSeats([]);       // clear selected seats
-  setSeatNumbers([]);         // clear seat numbers
-  setShowModal(false);        // close modal if open
-  setTimeLeft(null);          // reset timer
-  window.location.reload();
-};
+  const handleTimerEnd = () => {
+    alert("⏰ Seat lock expired!");
+    setIsLockPhase(false);
+    setSelectedSeats([]);
+    setSeatNumbers([]);
+    setShowModal(false);
+    setTimeLeft(null);
+    window.location.reload();
+  };
 
+  /* ------------------ BLOCK BACK / REFRESH / CLOSE ------------------ */
+  useEffect(() => {
+    if (!isLockPhase) return;
 
-  // Seat selection toggle
-  const toggleSeatSelection = (seatId) => {
-    if (seatLocks[seatId] === 'locked' || seatLocks[seatId] === 'booked') return;
+    const block = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
 
-    setSelectedSeats(prev =>
-      prev.includes(seatId)
-        ? prev.filter(id => id !== seatId)
-        : [...prev, seatId]
+    const blockBack = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    window.addEventListener("beforeunload", block);
+    window.addEventListener("popstate", blockBack);
+    window.history.pushState(null, "", window.location.href);
+
+    return () => {
+      window.removeEventListener("beforeunload", block);
+      window.removeEventListener("popstate", blockBack);
+    };
+  }, [isLockPhase]);
+
+  /* ------------------ ACTIONS ------------------ */
+  const toggleSeatSelection = (id) => {
+    if (isLockPhase) return; // 🔒 NO CHANGES AFTER BOOK NOW
+    if (seatLocks[id] === "locked" || seatLocks[id] === "booked") return;
+
+    setSelectedSeats((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
     );
   };
 
-  const scrollToSeats = () => {
-    seatSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  if (loading) return <div className="text-center mt-5">Loading event details...</div>;
-  if (error) return <div className="text-center mt-5 text-danger">Error: {error}</div>;
-
-  const formattedDate = format(new Date(event.date), 'dd MMM, yyyy');
-  const formattedTime = format(new Date(event.date), 'h:mm a');
-
   const handleBookNow = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lock-seats`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/lock-seats`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: userIdRef.current,
           eventId,
-          selectedSeats
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        console.log('Seats locked successfully');
-        setTimeLeft(300); // 15-minute timer
-        setShowModal(true);
-      } else {
-        alert('Failed to lock seats');
+          selectedSeats,
+        }),
       }
-    } catch (err) {
-      console.error('Error locking seats:', err);
-      alert('Something went wrong while reserving your seats.');
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setIsLockPhase(true);
+      setTimeLeft(300); // ⏳ START ONCE
+      setShowModal(true);
+    } else {
+      alert(data.message || "Failed to lock seats");
     }
   };
 
+  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (error) return <p className="text-center mt-10 text-red-500">{error}</p>;
+
+  const formattedDate = format(new Date(event.date), "dd MMM, yyyy");
+  const formattedTime = format(new Date(event.date), "h:mm a");
+
   return (
     <div>
-      {/* Hero Section */}
-      <div className="event-hero position-relative text-white mb-5">
+      {/* HERO */}
+      <div className="relative h-[380px] mb-10 text-white">
         <div
-          className="event-background"
-          style={{
-            backgroundImage: `url(${event.image_url})`,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '450px',
-            width: '100%',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'brightness(0.4)',
-            zIndex: 1,
-          }}
+          className="absolute inset-0 bg-cover bg-center brightness-50 rounded-b-xl"
+          style={{ backgroundImage: `url(${event.image_url})` }}
         />
-        <div className="container position-relative z-2 py-5 d-flex flex-wrap align-items-start">
-          <div className="event-card bg-dark bg-opacity-75 p-4 rounded shadow-lg d-flex flex-row align-items-start">
+        <div className="relative z-10 max-w-6xl mx-auto p-6">
+          <div className="bg-black/70 rounded-xl p-6 flex gap-6">
             <img
               src={event.image_url}
-              alt={event.title}
-              className="event-poster rounded me-4"
-              style={{ width: '200px', height: '300px', objectFit: 'cover' }}
+              className="w-[200px] h-[300px] object-cover rounded"
             />
             <div>
-              <h2 className="fw-bold mb-3">{event.title}</h2>
-              <div className="mb-3">
-                <button className="btn btn-light btn-sm">Rate Now</button>
-              </div>
-              <div className="mb-3">
-                <span className="badge bg-secondary me-2">2D</span>
-                <span className="badge bg-secondary me-2">{event.language || 'Hindi'}</span>
-              </div>
-              <div className="text-light small mb-2">
-                🕒 {formattedTime} • {event.certificate || 'A'} • {formattedDate}
-              </div>
-              <div className="text-light small mb-3">📍 {event.location}</div>
-              <button className="btn btn-success px-4" onClick={scrollToSeats}>Book Tickets Now!!</button>
+              <h2 className="text-3xl font-bold mb-3">{event.title}</h2>
+              <p className="text-sm mb-2">
+                🕒 {formattedTime} • {formattedDate}
+              </p>
+              <p className="text-sm mb-4">📍 {event.location}</p>
+              <button
+                onClick={() =>
+                  seatSectionRef.current?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-semibold"
+              >
+                Book Tickets
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Seat Layout */}
-      <h4 ref={seatSectionRef} className="text-center mb-4 mt-5 font-weight-bold">Select Your Seats</h4>
-      <div className="d-flex flex-column align-items-center gap-3 mb-5">
-        {Object.keys(seatsByRow).sort().map(row => (
-          <div className="d-flex gap-3 mb-2" key={row}>
-            {seatsByRow[row].map(seat => {
-              const lockState = seatLocks[seat.id];
+      {/* SEATS */}
+      <h3 ref={seatSectionRef} className="text-center text-xl font-bold mb-6">
+        Select Your Seats
+      </h3>
 
-              return (
-                <button
-                  id={seat.id}
-                  key={seat.id}
-                  disabled={seat.status === 'booked' || lockState === 'booked'}
-                  className={`btn btn-sm seat-btn ${lockState === 'booked' ? 'btn-danger' :
-                      lockState === 'locked' ? 'btn-warning' :
-                        lockState === 'mine' ? 'btn-primary' :
-                          selectedSeats.includes(seat.id) ? 'btn-success' : 'btn-outline-success'
+      <div className="flex flex-col items-center gap-5">
+        {Object.keys(seatsByRow)
+          .sort()
+          .map((row) => (
+            <div key={row} className="flex gap-2">
+              {seatsByRow[row].map((seat) => {
+                const state = seatLocks[seat.id];
+
+                const styles =
+                  seat.status === "booked"
+                    ? "bg-gray-400 text-white"
+                    : state === "locked"
+                    ? "bg-yellow-400 text-white"
+                    : selectedSeats.includes(seat.id)
+                    ? "bg-green-600 text-white"
+                    : "border border-green-600 text-green-600 hover:bg-green-100";
+
+                const disabled =
+                  seat.status === "booked" || state === "locked" || isLockPhase;
+
+                return (
+                  <button
+                    key={seat.id}
+                    disabled={disabled}
+                    onClick={() => toggleSeatSelection(seat.id)}
+                    className={`w-10 h-10 rounded text-sm font-semibold transition ${styles} ${
+                      disabled ? "opacity-70 cursor-not-allowed" : ""
                     }`}
-                  onClick={() => toggleSeatSelection(seat.id)}
-                  aria-label={`Seat ${seat.seat_number} - ${seat.status === 'booked' ? 'Booked' : 'Available'}`}
-                >
-                  {seat.seat_number}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+                  >
+                    {seat.seat_number}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
       </div>
 
-      {/* Selected Seats Display */}
-      <div className="text-center mt-5">
-        <h5>Selected Seats:</h5>
-        <div className="d-flex flex-wrap justify-content-center gap-2">
-          {selectedSeats.length > 0
-            ? seatNumbers.map((seatNum, index) => (
-              <span key={index} className="badge bg-success p-2">{seatNum}</span>
-            ))
-            : <span className="badge bg-secondary p-2">None</span>
-          }
-        </div>
-      </div>
-
-      {/* Timer */}
-      {timeLeft !== null && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          backgroundColor: '#fff3cd',
-          color: '#856404',
-          padding: '10px 20px',
-          borderRadius: '8px',
-          boxShadow: '0 0 10px rgba(0,0,0,0.15)',
-          zIndex: 9999
-        }}>
-          ⏳ Time left: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+      {/* TIMER */}
+      {isLockPhase && timeLeft !== null && (
+        <div className="fixed top-5 right-5 bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow">
+          ⏳ {Math.floor(timeLeft / 60)}:
+          {(timeLeft % 60).toString().padStart(2, "0")}
         </div>
       )}
 
-      <div className="book-now-container">
-        <BookNowButton selectedSeats={selectedSeats} handleBookNow={handleBookNow} />
+      <div className="mt-10 flex justify-center">
+        <BookNowButton
+          selectedSeats={selectedSeats}
+          handleBookNow={handleBookNow}
+        />
       </div>
 
-      {showModal && <UserDetailsModal seatsSelected={seatNumbers} seatId={selectedSeats} eventId={eventId} userId={userIdRef.current} onClose={() => setShowModal(false)} />}
+      {showModal && (
+        <UserDetailsModal
+          seatsSelected={seatNumbers}
+          seatId={selectedSeats}
+          eventId={eventId}
+          userId={userIdRef.current}
+          onClose={() => {}} // ❌ cannot close
+        />
+      )}
     </div>
   );
 }

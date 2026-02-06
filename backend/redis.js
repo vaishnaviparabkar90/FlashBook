@@ -1,8 +1,6 @@
 import IORedis from 'ioredis';
 import dotenv from 'dotenv';
 dotenv.config();
-// The connection string from Upstash
-
 const REDIS_URL = process.env.REDIS_URL;
 // Create a new Redis client instance
 console.log('🔄 Connecting to Redis...',REDIS_URL);

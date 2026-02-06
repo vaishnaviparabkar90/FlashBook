@@ -6,48 +6,26 @@ export default function Navbar() {
 
   return (
     <>
-      <nav
-        className="navbar navbar-expand-lg navbar-dark shadow-sm px-4 py-3"
-        style={{ backgroundColor: '#333333' }}
-      >
-        <div className="container-fluid">
-          <a className="navbar-brand fw-bold fs-4" href="#">
+      {/* Navbar */}
+      <nav className="bg-[#333333] shadow-lg px-6 py-4">
+        <div className="flex items-center justify-between">
+          <a className="text-white no-underline text-2xl font-bold">
             BookingApp
           </a>
+          <div className="flex gap-6 text-lg">
+            <button
+              onClick={() => setShowAbout(true)}
+              className="text-gray-300 hover:text-white"
+            >
+              About
+            </button>
 
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarContent"
-            aria-controls="navbarContent"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-
-          <div className="collapse navbar-collapse justify-content-end" id="navbarContent">
-            <ul className="navbar-nav gap-3 fs-5">
-              <li className="nav-item">
-                <button
-                  className="btn btn-link nav-link"
-                  onClick={() => setShowAbout(true)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  About
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  className="btn btn-link nav-link"
-                  onClick={() => setShowContact(true)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Contact
-                </button>
-              </li>
-            </ul>
+            <button
+              onClick={() => setShowContact(true)}
+              className="text-gray-200 hover:text-white "
+            >
+              Contact
+            </button>
           </div>
         </div>
       </nav>
@@ -55,33 +33,27 @@ export default function Navbar() {
       {/* About Modal */}
       {showAbout && (
         <div
-          className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-          tabIndex="-1"
-          role="dialog"
-          onClick={() => setShowAbout(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          
         >
           <div
-            className="modal-dialog"
-            role="document"
+            className="bg-[#2c2c2c] text-gray-100 rounded-xl w-full max-w-md p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-content" style={{ backgroundColor: '#2c2c2c', color: '#f5f5f5', borderRadius: '10px' }}>
-  <div className="modal-header border-0">
-    <h5 className="modal-title">About BookingApp</h5>
-    <button
-      type="button"
-      className="btn-close btn-close-white"
-      aria-label="Close"
-      onClick={() => setShowAbout(false)}
-    ></button>
-  </div>
-  <div className="modal-body">
-    <p>This is a demo booking app built by Vaishnavi Parabkar.</p>
-    <p>For development use only, not production ready.</p>
-  </div>
-</div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-yellow-300">About BookingApp</h2>
+              <button
+                onClick={() => setShowAbout(false)}
+                className="text-gray-400 hover:text-white text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
 
+            <div className="space-y-2">
+              <p>This is a demo booking app built by Vaishnavi Parabkar.</p>
+              <p>For development use only, not production ready.</p>
+            </div>
           </div>
         </div>
       )}
@@ -89,33 +61,27 @@ export default function Navbar() {
       {/* Contact Modal */}
       {showContact && (
         <div
-          className="modal fade show"
-          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-          tabIndex="-1"
-          role="dialog"
-          onClick={() => setShowContact(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          
         >
           <div
-            className="modal-dialog"
-            role="document"
+            className="bg-[#2c2c2c] text-gray-100 rounded-xl w-full max-w-md p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-content" style={{ backgroundColor: '#2c2c2c', color: '#f5f5f5', borderRadius: '10px' }}>
-  <div className="modal-header border-0">
-    <h5 className="modal-title">Contact Us</h5>
-    <button
-      type="button"
-      className="btn-close btn-close-white"
-      aria-label="Close"
-      onClick={() => setShowContact(false)}
-    ></button>
-  </div>
-  <div className="modal-body">
-    <p>Email: parabkarvaishnavi24@gmail.com</p>
-    <p>Phone: +91 7499258458</p>
-  </div>
-</div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-yellow-300">Contact Us</h2>
+              <button
+                onClick={() => setShowContact(false)}
+                className="text-gray-400 hover:text-white text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
 
+            <div className="space-y-2">
+              <p>Email: parabkarvaishnavi24@gmail.com</p>
+              <p>Phone: +91 7499258458</p>
+            </div>
           </div>
         </div>
       )}

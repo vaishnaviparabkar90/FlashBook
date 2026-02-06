@@ -5,29 +5,11 @@ const Modal = ({ children, onClose }) => {
   return ReactDOM.createPortal(
     <div
       onClick={onClose}
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50"
     >
-      
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "white",
-          padding: "2rem",
-          borderRadius: "8px",
-          zIndex: 1001,
-          minWidth: "300px",
-        }}
+        className="bg-white rounded-lg p-8 min-w-[300px] shadow-xl z-[1001]"
       >
         {children}
       </div>

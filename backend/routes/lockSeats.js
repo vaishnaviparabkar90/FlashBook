@@ -37,9 +37,11 @@ router.post('/', async (req, res) => {
         bookedSeats: result.rows.map(r => r.id),
       });
     }
+    
+    /* ---------------- STEP 2: REDIS LOCK (ALL OR NONE) ---------------- */
+    console.log('🔒 Locking seats in Redis (atomic)');
 
-    /* ---------------- STEP 2: REDIS LOCK ---------------- */
-    console.log('🔒 Locking seats in Redis');
+    const lockedSeats = []; // 👈 track successfully locked seats
 
     for (const seatId of selectedSeats) {
       const lockKey = `seat_lock:${eventId}:${seatId}`;
@@ -55,11 +57,28 @@ router.post('/', async (req, res) => {
       );
 
       if (!lockResult) {
+        console.log(`❌ Seat ${seatId} already locked. Rolling back...`);
+
+        /* -------- ROLLBACK: UNLOCK ALL PREVIOUS SEATS -------- */
+        for (const lockedSeatId of lockedSeats) {
+          const rollbackKey = `seat_lock:${eventId}:${lockedSeatId}`;
+          await redisClient.del(rollbackKey);
+
+          broadcastSeatUpdate({
+            eventId,
+            seatId: lockedSeatId,
+            action: 'unlocked',
+          });
+        }
+
         return res.json({
           success: false,
           message: `Seat ${seatId} is already being booked`,
         });
       }
+
+      // lock successful
+      lockedSeats.push(seatId);
 
       console.log(`✅ Seat ${seatId} locked`);
 
@@ -71,9 +90,10 @@ router.post('/', async (req, res) => {
       });
     }
 
+    /* ---------------- ALL SEATS LOCKED SUCCESSFULLY ---------------- */
     return res.json({
       success: true,
-      message: 'Seats locked successfully',
+      message: 'All seats locked successfully',
       lockExpirySeconds: LOCK_EXPIRY,
     });
 
